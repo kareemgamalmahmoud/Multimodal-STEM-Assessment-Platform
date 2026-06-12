@@ -26,6 +26,19 @@ import numpy as np
 import pandas as pd
 
 
+def _norm01(v: float) -> float:
+    """Normalize a raw model score to [0, 1], handling common off-scale outputs."""
+    if v <= 1.0:
+        return max(0.0, min(1.0, v))
+    elif v <= 4.0:
+        return v / 4.0
+    elif v <= 5.0:
+        return v / 5.0
+    elif v <= 10.0:
+        return v / 10.0
+    return v / 100.0
+
+
 # ---------------------------------------------------------------------------
 # Component 1: Script-Aware Routing
 # ---------------------------------------------------------------------------
@@ -158,7 +171,7 @@ def aggregate_votes_median(votes: list[dict], rubric: dict) -> dict:
         "criterion_scores": aggregated_criterion_scores,
         "total_score": round(max(0.0, min(1.0, total_score)), 4),
         "n_votes": len(votes),
-        "raw_votes": [round(float(v.get("total_score", 0.0)), 4) for v in votes],
+        "raw_votes": [round(_norm01(float(v.get("total_score", 0.0))), 4) for v in votes],
     }
 
 
