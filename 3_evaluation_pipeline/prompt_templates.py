@@ -234,14 +234,20 @@ Student's Transcribed Answer:
 Rubric:
 {criteria_text}
 
-Score each criterion from 0.0 (completely wrong) to 1.0 (perfect).
-Compute the weighted total score.
+CRITICAL SCORING RULES — read carefully:
+- All scores MUST be decimal values between 0.0 and 1.0 INCLUSIVE. No other scale is valid.
+- DO NOT use integer scales like 0-4 or 0-5. DO NOT output 4, 5, 4.0, 5.0 etc.
+- 0.0 = completely wrong or missing  |  0.5 = partially correct  |  1.0 = fully correct
+- Valid examples: 0.0, 0.25, 0.5, 0.75, 1.0
+- INVALID examples: 4, 5, 4.0, 10, 3.5 — these will break the system
 
-Respond ONLY with valid JSON:
+Compute weighted total_score = sum(score_i * weight_i) for all criteria.
+
+Respond ONLY with valid JSON (no extra text before or after):
 {{
   "criterion_scores": [
-    {{"name": "<criterion name>", "score": <float 0.0–1.0>, "justification": "<brief reason>"}},
+    {{"name": "<criterion name>", "score": <decimal 0.0 to 1.0>, "justification": "<brief reason>"}},
     ...
   ],
-  "total_score": <float 0.0–1.0, weighted average>
+  "total_score": <decimal 0.0 to 1.0>
 }}"""

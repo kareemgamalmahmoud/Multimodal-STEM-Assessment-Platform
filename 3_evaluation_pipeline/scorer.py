@@ -71,6 +71,27 @@ def _clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, value))
 
 
+def _normalize_score(value: float) -> float:
+    """
+    Normalize a score to [0.0, 1.0] regardless of the scale the model used.
+    - If model used 0–4 scale (common exam grade scale), divide by 4.
+    - If model used 0–5 scale, divide by 5.
+    - If model used 0–10 scale, divide by 10.
+    - If already in [0, 1], keep as-is.
+    This guards against the known issue where Qwen2-VL ignores the 0–1 instruction.
+    """
+    if value <= 1.0:
+        return _clamp(value)
+    elif value <= 4.0:
+        return _clamp(value / 4.0)
+    elif value <= 5.0:
+        return _clamp(value / 5.0)
+    elif value <= 10.0:
+        return _clamp(value / 10.0)
+    else:
+        return _clamp(value / 100.0)
+
+
 def _weighted_total(criterion_scores: List[CriterionScore]) -> float:
     if not criterion_scores:
         return 0.0
@@ -88,7 +109,7 @@ def _parse_criterion_scores(raw: dict, rubric: dict) -> List[CriterionScore]:
         name = item.get("name", "unknown")
         results.append(CriterionScore(
             name=name,
-            score=_clamp(float(item.get("score", 0.0))),
+            score=_normalize_score(float(item.get("score", 0.0))),
             weight=criteria_map.get(name, 1.0 / max(len(criteria_map), 1)),
             justification=item.get("justification", ""),
         ))
@@ -268,7 +289,7 @@ def score_astra(
         )
         parsed = parse_json_from_response(response)
         all_vote_results.append(parsed)
-        raw_votes.append(_clamp(float(parsed.get("total_score", 0.0))))
+        raw_votes.append(_normalize_score(float(parsed.get("total_score", 0.0))))
 
     # --- Step 3: Aggregate — median per criterion (robust to outliers) ---
     criterion_names = [c["name"] for c in rubric.get("criteria", [])]
@@ -281,7 +302,7 @@ def score_astra(
         for vote in all_vote_results:
             for cs in vote.get("criterion_scores", []):
                 if cs.get("name") == name:
-                    per_vote_scores.append(_clamp(float(cs.get("score", 0.0))))
+                    per_vote_scores.append(_normalize_score(float(cs.get("score", 0.0))))
                     per_vote_justifications.append(cs.get("justification", ""))
                     break
 

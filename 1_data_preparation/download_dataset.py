@@ -305,7 +305,7 @@ def create_dummy_dataset(save_dir: Path):
         img = Image.new("L", (500, 120), color=245)
         draw = ImageDraw.Draw(img)
         draw.rectangle([5, 5, 495, 115], outline=180)
-        draw.text((15, 40), f"Ans: {sample['reference_answer']}", fill=30)
+        draw.text((15, 40), sample['reference_answer'], fill=30)
         img_path = img_dir / f"{sample['id']}.png"
         img.save(img_path)
         sample["image_path"] = str(img_path.relative_to(save_dir))

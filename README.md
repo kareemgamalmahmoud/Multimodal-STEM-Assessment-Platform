@@ -107,6 +107,33 @@ The scientific grounding for each ASTRA component:
 
 ---
 
+## Conda Environment Pack (Deliverable)
+
+The graded deliverable requires a packed Conda environment. Steps to produce it:
+
+```bash
+# 1. Create the environment (one-time setup)
+conda env create -f environment.yml
+
+# 2. Activate and verify
+conda activate stem-assess
+python -c "import transformers, bitsandbytes; print('OK')"
+
+# 3. Pack the environment into a single archive
+conda install -n stem-assess conda-pack   # install packer into the env
+conda pack -n stem-assess -o stem-assess.tar.gz
+
+# The resulting stem-assess.tar.gz can be submitted as the environment deliverable.
+# Unpack on a new machine with:
+#   mkdir stem-assess && tar -xzf stem-assess.tar.gz -C stem-assess
+#   source stem-assess/bin/activate
+#   conda-unpack
+```
+
+**Note:** `conda pack` requires the environment to be fully installed locally. On Google Colab, use `pip install -r requirements.txt` instead since Conda is not available by default in the Colab base image.
+
+---
+
 ## Literature Survey
 
 See [literature_survey/sources.md](literature_survey/sources.md) for all referenced papers, models, and datasets with links.
