@@ -1,0 +1,27 @@
+experiment:
+  name: exp3_rubric_decomposed
+  description: >
+    Rubric-decomposed scoring: the model first auto-generates a weighted rubric
+    from the question + reference answer, then evaluates each criterion independently
+    in a separate LLM call. Final score is a weighted average of criterion scores.
+    Inspired by the analytic scoring framework in Yavuz et al. 2024 and
+    analytic vs. holistic scoring theory in educational assessment.
+    Expected improvement: more interpretable, consistent, and criterion-aligned scores.
+
+model:
+  id: Qwen/Qwen2-VL-7B-Instruct
+  use_4bit: true
+  max_new_tokens: 512
+  temperature: 0.1
+
+data:
+  processed_dir: ../../data/fermat_processed
+  split: all
+
+evaluation:
+  method: rubric_decomposed
+  limit: null
+  use_rubric_cache: true   # cache generated rubrics to avoid redundant calls
+
+output:
+  results_dir: ./results

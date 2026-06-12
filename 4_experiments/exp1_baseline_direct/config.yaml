@@ -1,0 +1,23 @@
+experiment:
+  name: exp1_baseline_direct
+  description: >
+    Baseline: single VLM call per image with no explicit reasoning.
+    The model sees the image and is asked to assign a score directly.
+    Serves as the lower-bound reference point for all other experiments.
+
+model:
+  id: Qwen/Qwen2-VL-7B-Instruct
+  use_4bit: true
+  max_new_tokens: 256
+  temperature: 0.1
+
+data:
+  processed_dir: ../../data/fermat_processed
+  split: all          # 'all', 'train', 'test', 'validation', 'demo'
+
+evaluation:
+  method: baseline
+  limit: null         # set to integer to process only N samples (for testing)
+
+output:
+  results_dir: ./results

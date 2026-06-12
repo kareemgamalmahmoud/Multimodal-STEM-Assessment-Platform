@@ -1,0 +1,25 @@
+experiment:
+  name: exp2_chain_of_thought
+  description: >
+    Chain-of-Thought prompting: the model is asked to (1) transcribe the handwriting,
+    (2) analyze the student's reasoning step by step, then (3) assign a score.
+    Grounded in Wei et al. 2022 'Chain-of-Thought Prompting Elicits Reasoning in LLMs'.
+    Expected improvement over Exp1: more consistent scores, better error identification.
+    Expected limitation: no rubric → criteria weighting is implicit and inconsistent.
+
+model:
+  id: Qwen/Qwen2-VL-7B-Instruct
+  use_4bit: true
+  max_new_tokens: 1024   # CoT needs more tokens for reasoning
+  temperature: 0.1
+
+data:
+  processed_dir: ../../data/fermat_processed
+  split: all
+
+evaluation:
+  method: cot
+  limit: null
+
+output:
+  results_dir: ./results

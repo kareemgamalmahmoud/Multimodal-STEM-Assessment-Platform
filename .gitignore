@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.so
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (large files — download via Stage 1 scripts)
+data/
+*.csv
+*.json
+*.jsonl
+*.parquet
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Model weights (download via Stage 2/3 scripts)
+models/
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.gguf
+
+# Experiment outputs
+4_experiments/exp*/results/
+5_results_analysis/output/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Conda
+.conda/
+
+# Logs
+*.log
+logs/
+
+# Temporary
+tmp/
+temp/

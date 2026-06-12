@@ -1,0 +1,34 @@
+experiment:
+  name: exp4_astra_ours
+  description: >
+    ASTRA — Adaptive Script-aware Two-stage Rubric Assessment.
+    Our novel contribution. Three innovations beyond Exp3:
+      1. Script-aware routing: detects Arabic/English/mixed before scoring.
+      2. Self-consistency voting: runs scoring prompt N=5 times at temperature=0.7,
+         aggregates via median per criterion (Wang et al. 2023).
+      3. Bias calibration: applies a per-language empirical offset learned from
+         a calibration split (Ahuja et al. 2023 motivates this for multilingual LLMs).
+
+model:
+  id: Qwen/Qwen2-VL-7B-Instruct
+  use_4bit: true
+  max_new_tokens: 512
+  vote_temperature: 0.7   # temperature used for the N voting passes
+  deterministic_temperature: 0.1
+
+astra:
+  n_votes: 5              # number of self-consistency voting passes
+  calibration_split_ratio: 0.2   # fraction of labeled data used for calibration
+  calibration_min_samples: 10    # minimum samples per language for reliable calibration
+
+data:
+  processed_dir: ../../data/fermat_processed
+  split: all
+
+evaluation:
+  method: astra
+  limit: null
+
+output:
+  results_dir: ./results
+  calibration_path: ./results/calibration_offsets.json
