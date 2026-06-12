@@ -23,23 +23,122 @@ RAW_DIR = REPO_ROOT / "data" / "fermat_raw"
 EDA_DIR = REPO_ROOT / "data" / "eda"
 
 # Candidate column names across different dataset versions
-SCORE_COLUMNS = ["human_score", "score", "label", "grade"]
-TEXT_COLUMNS = ["question", "query", "problem"]
-ANSWER_COLUMNS = ["reference_answer", "answer", "solution", "ref"]
-IMAGE_COLUMNS = ["image_path", "image", "img_path"]
-LANG_COLUMNS = ["language_track", "language", "lang"]
+SCORE_COLUMNS = ["human_score", "score", "label", "grade", "mark", "marks", "total_score"]
+TEXT_COLUMNS = ["question", "query", "problem", "question_text", "prompt"]
+ANSWER_COLUMNS = ["reference_answer", "answer", "solution", "ref", "gold_answer", "correct_answer"]
+IMAGE_COLUMNS = ["image_path", "image", "img_path", "scan", "handwriting_image", "student_answer_image"]
+LANG_COLUMNS = ["language_track", "language", "lang", "script"]
 
 
-def load_jsonl_files(data_dir: Path) -> list[dict]:
-    """Load all JSONL files from the raw data directory."""
+def load_data_files(data_dir: Path) -> list[dict]:
+    """
+    Load records from any supported format in data_dir:
+    JSONL (preferred) → JSON → CSV → TSV → Parquet.
+    Also recursively checks the FERMAT_github subdirectory as fallback.
+    """
     records = []
-    for path in data_dir.glob("*.jsonl"):
+
+    def _read_jsonl(path):
+        rows = []
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
-                    records.append(json.loads(line))
+                    try:
+                        rows.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+        return rows
+
+    def _read_csv(path, sep=","):
+        try:
+            import pandas as pd
+            df = pd.read_csv(path, sep=sep, low_memory=False)
+            df.columns = [str(c).lower().strip() for c in df.columns]
+            return df.to_dict(orient="records")
+        except Exception as e:
+            print(f"  [WARN] Could not read {path.name}: {e}")
+            return []
+
+    def _read_json(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                return data
+            elif isinstance(data, dict):
+                # Could be {split: [records]} format
+                all_rows = []
+                for v in data.values():
+                    if isinstance(v, list):
+                        all_rows.extend(v)
+                return all_rows if all_rows else [data]
+        except Exception as e:
+            print(f"  [WARN] Could not read {path.name}: {e}")
+            return []
+
+    def _read_parquet(path):
+        try:
+            import pandas as pd
+            df = pd.read_parquet(path)
+            df.columns = [str(c).lower().strip() for c in df.columns]
+            return df.to_dict(orient="records")
+        except Exception as e:
+            print(f"  [WARN] Could not read {path.name}: {e}")
+            return []
+
+    # Search order: data_dir itself, then FERMAT_github subdirectory
+    search_dirs = [data_dir]
+    github_clone = data_dir / "FERMAT_github"
+    if github_clone.exists():
+        search_dirs.append(github_clone)
+        for sub in github_clone.iterdir():
+            if sub.is_dir() and sub.name != ".git":
+                search_dirs.append(sub)
+
+    skip_names = {"manifest.json"}
+
+    for search_dir in search_dirs:
+        if not search_dir.exists():
+            continue
+        for path in sorted(search_dir.iterdir()):
+            if path.is_dir() or path.name in skip_names:
+                continue
+            if path.suffix == ".jsonl":
+                rows = _read_jsonl(path)
+                if rows:
+                    records.extend(rows)
+                    print(f"  Loaded {len(rows)} rows from {path.relative_to(data_dir)}")
+            elif path.suffix == ".csv":
+                rows = _read_csv(path, sep=",")
+                if rows:
+                    records.extend(rows)
+                    print(f"  Loaded {len(rows)} rows from {path.relative_to(data_dir)}")
+            elif path.suffix == ".tsv":
+                rows = _read_csv(path, sep="\t")
+                if rows:
+                    records.extend(rows)
+                    print(f"  Loaded {len(rows)} rows from {path.relative_to(data_dir)}")
+            elif path.suffix == ".json" and path.name != "manifest.json":
+                rows = _read_json(path)
+                if rows:
+                    records.extend(rows)
+                    print(f"  Loaded {len(rows)} rows from {path.relative_to(data_dir)}")
+            elif path.suffix == ".parquet":
+                rows = _read_parquet(path)
+                if rows:
+                    records.extend(rows)
+                    print(f"  Loaded {len(rows)} rows from {path.relative_to(data_dir)}")
+
+        if records:
+            break  # found data in this directory — don't keep searching deeper
+
     return records
+
+
+# Keep old name as alias for compatibility
+def load_jsonl_files(data_dir: Path) -> list[dict]:
+    return load_data_files(data_dir)
 
 
 def resolve_column(record: dict, candidates: list[str]):
@@ -193,9 +292,16 @@ def main():
 
     EDA_DIR.mkdir(parents=True, exist_ok=True)
 
-    records = load_jsonl_files(RAW_DIR)
+    print(f"[INFO] Scanning {RAW_DIR} for data files ...")
+    records = load_data_files(RAW_DIR)
     if not records:
-        print(f"[ERROR] No JSONL files found in {RAW_DIR}. Run download_dataset.py first.")
+        print(
+            f"\n[ERROR] No data found in {RAW_DIR}.\n"
+            "  Options:\n"
+            "  1. Set HF_TOKEN and re-run: python download_dataset.py --token hf_xxxxx\n"
+            "  2. Use demo data:            python download_dataset.py --demo\n"
+            "  3. Check the clone manually: ls data/fermat_raw/FERMAT_github/"
+        )
         return
 
     print(f"\n[INFO] Loaded {len(records)} records from {RAW_DIR}\n")

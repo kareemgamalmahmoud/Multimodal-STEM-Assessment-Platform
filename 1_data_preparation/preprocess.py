@@ -31,15 +31,16 @@ PAD_SIZE = 10         # white border in pixels
 
 
 def load_metadata(raw_dir: Path) -> list[dict]:
-    """Load all metadata records from JSONL files in raw_dir."""
-    records = []
-    for path in raw_dir.glob("*.jsonl"):
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    records.append(json.loads(line))
-    return records
+    """Load metadata from any supported format (delegates to explore_dataset loader)."""
+    # Reuse the multi-format loader from explore_dataset
+    import importlib.util, sys as _sys
+    loader_path = Path(__file__).parent / "explore_dataset.py"
+    spec = importlib.util.spec_from_file_location("explore_dataset", loader_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.load_data_files(raw_dir)
+
+
 
 
 def otsu_binarize(gray: np.ndarray) -> np.ndarray:
