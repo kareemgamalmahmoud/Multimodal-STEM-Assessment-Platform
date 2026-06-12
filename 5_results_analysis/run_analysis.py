@@ -24,7 +24,7 @@ OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 # Add this directory to path for local imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from metrics import load_predictions, compute_all_metrics
+from metrics import compute_all_metrics
 from comparison_table import generate_tables
 from visualizations import (
     plot_score_distributions,
@@ -61,16 +61,20 @@ def main():
             continue
 
         try:
-            preds = load_predictions(pred_path)
+            # load_predictions returns a DataFrame (for metrics); also keep the raw
+            # list for visualization functions that expect list[dict].
             import pandas as pd
-            df = pd.DataFrame(preds)
+            with open(pred_path, "r", encoding="utf-8") as fh:
+                preds_list = json.load(fh)
+
+            df = pd.DataFrame(preds_list)
 
             metrics = compute_all_metrics(df, method_name=exp_dir_name)
             all_metrics.append(metrics)
-            all_preds[exp_dir_name] = preds
+            all_preds[exp_dir_name] = preds_list   # list[dict] for plots
 
             if "astra" in exp_dir_name:
-                astra_preds = preds
+                astra_preds = preds_list
 
             print(f"  {exp_dir_name:<35} | n={metrics.get('n', 0):<5} | "
                   f"QWK={str(metrics.get('qwk', 'N/A')):<7} | "
